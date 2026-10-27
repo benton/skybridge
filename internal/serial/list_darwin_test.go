@@ -12,7 +12,7 @@ func TestParseIORegFixture(t *testing.T) {
 	}
 	defer f.Close()
 	got := parseIOReg(f)
-	info, ok := got["/dev/cu.PL2303G-USBtoUART110"]
+	info, ok := got["/dev/cu.PL2303G-USBtoUART210"]
 	if !ok {
 		t.Fatalf("callout device missing from %v", got)
 	}

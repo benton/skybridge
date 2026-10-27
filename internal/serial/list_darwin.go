@@ -81,11 +81,9 @@ func parseIOReg(r io.Reader) map[string]PortInfo {
 			top.product = strings.Trim(value, `"`)
 		case "IOCalloutDevice":
 			path := strings.Trim(value, `"`)
-			for j := len(stack) - 1; j >= 0; j-- {
-				if stack[j].vid != 0 {
-					out[path] = PortInfo{Path: path, VID: stack[j].vid, PID: stack[j].pid, Product: stack[j].product}
-					break
-				}
+			if info, ok := usbAncestor(stack); ok {
+				info.Path = path
+				out[path] = info
 			}
 		}
 	}
@@ -108,4 +106,21 @@ func ioregProperty(line string) (key, value string, ok bool) {
 		return "", "", false
 	}
 	return key, strings.TrimSpace(rest[1:]), true
+}
+
+// usbAncestor returns the IDs of the nearest ancestor carrying a vendor ID
+// and the product name of the nearest ancestor that has one. Driver nodes
+// repeat the IDs of their device but not its name, so the two can differ.
+func usbAncestor(stack []ioregNode) (PortInfo, bool) {
+	var info PortInfo
+	found := false
+	for j := len(stack) - 1; j >= 0; j-- {
+		if !found && stack[j].vid != 0 {
+			info.VID, info.PID, found = stack[j].vid, stack[j].pid, true
+		}
+		if info.Product == "" && stack[j].product != "" {
+			info.Product = stack[j].product
+		}
+	}
+	return info, found
 }

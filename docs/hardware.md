@@ -53,7 +53,7 @@ can check which chip you have:
 
 ```
 PATH                          ADAPTER          VID:PID    PRODUCT
-/dev/cu.PL2303G-USBtoUART110  Prolific PL2303  067b:23a3  USB-Serial Controller
+/dev/cu.PL2303G-USBtoUART210  Prolific PL2303  067b:23a3  USB-Serial Controller
 /dev/cu.Bluetooth-Incoming-Port  -             -          -
 ```
 
