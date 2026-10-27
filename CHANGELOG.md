@@ -6,6 +6,16 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- `gui` command: serves a one-page control panel on `127.0.0.1:4031` and
+  opens it in the browser. It shows the SkySafari, bridge and mount chain
+  live, streams the log, starts and stops the bridge, and edits the
+  settings, which it saves in the user's config directory. A red-light mode
+  keeps night vision. See `docs/gui.md`.
+- `bridge.Config.Events` callbacks for port, client and traffic changes.
+- A project logo in `assets/logo.svg`.
+
 ## [0.1.0] - 2026-10-27
 
 First release. Verified against a Celestron NexStar+ hand controller on a

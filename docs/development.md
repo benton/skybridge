@@ -15,7 +15,8 @@ was built from is under `docs/superpowers/plans/`.
 | Path | Responsibility |
 |---|---|
 | `cmd/skybridge/main.go` | Entry point. Calls `cli.Main` and exits with its code. |
-| `internal/cli/` | Command dispatch, flag and environment handling, exit codes, and one file per command (`serve`, `list-ports`, `probe`, `mounts`, `version`). `opener.go` turns discovery, serial and probes into the `bridge.Opener` that `serve` uses. |
+| `internal/cli/` | Command dispatch, flag and environment handling, exit codes, and one file per command (`serve`, `gui`, `list-ports`, `probe`, `mounts`, `version`). `opener.go` turns discovery, serial and probes into the `bridge.Opener` that `serve` uses. |
+| `internal/ui/` | The control panel behind `gui`: a controller that owns the bridge's lifecycle and state, an HTTP API with a server-sent event stream, and the embedded page (`static/`). Hardware comes in through `ui.Deps`, which `cli/gui.go` fills. Design notes in `docs/design/gui.md`. |
 | `internal/bridge/` | The relay core. Knows nothing about hardware: takes a `net.Listener` and an `Opener` callback, serves one client at a time, refuses connections while the port is absent, reopens after serial failure. Tested entirely with `net.Pipe`. |
 | `internal/serial/` | The only package with build tags and the only one importing `x/sys`. `Open` gives an 8N1 `Port`; `List` enumerates ports with USB IDs. Unix uses termios and `poll`, Windows uses `SetCommState`/`SetCommTimeouts` and SetupAPI. |
 | `internal/discovery/` | Known USB adapters and the ranking that picks the most likely port. |

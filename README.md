@@ -20,6 +20,11 @@ The software builds as one small binary with no dependencies, for Windows, macOS
 and Linux (including Raspberry Pi). Leave it running: unplugging the cable or
 powering the mount off and on again is handled automatically.
 
+![The control panel: SkySafari connected, the bridge listening, and a NexStar hand controller open on its serial port, with the log and setup below](docs/images/control-panel.png)
+
+That is `skybridge gui`, the control panel; `skybridge serve` does the same job
+without one.
+
 ## Install and Run
 
 1. Download the archive for your operating system from the
@@ -61,6 +66,7 @@ Full walkthrough for SkySafari 6 and 7:
 | Command | What it does |
 |---|---|
 | `skybridge serve` | Relay the serial port to TCP. This is the default when no command is given. |
+| `skybridge gui` | Serve, and open a control panel in the browser to watch and change it. See [docs/gui.md](docs/gui.md). |
 | `skybridge list-ports` | Show every serial port and which USB adapter is behind it. |
 | `skybridge probe` | Talk to the mount and report which family it is. |
 | `skybridge mounts` | List the mount profiles skybridge knows. |
@@ -73,6 +79,7 @@ handy under a service manager.
 
 ## More
 
+- [The control panel](docs/gui.md)
 - [Supported mounts and cables](docs/hardware.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Development](docs/development.md)
