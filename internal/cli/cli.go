@@ -43,6 +43,7 @@ var rootCtx context.Context
 // by its own file's init; a command without a Run is not yet available.
 var commands = []*command{
 	{Name: "serve", Summary: "relay the hand controller's serial port to TCP (default)"},
+	{Name: "gui", Summary: "serve and open the control panel in a browser"},
 	{Name: "list-ports", Summary: "list serial ports and the USB adapters behind them"},
 	{Name: "probe", Summary: "talk to the mount and identify it"},
 	{Name: "mounts", Summary: "list the known mount profiles"},
