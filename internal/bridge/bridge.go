@@ -30,6 +30,49 @@ type Config struct {
 	Open       Opener
 	Logger     *slog.Logger
 	RetryDelay time.Duration
+	// Events, when set, is told about state changes; every field is optional.
+	Events Events
+}
+
+// Events are callbacks for anything that wants to watch the bridge. They are
+// called from the bridge's own goroutine and must return promptly.
+type Events struct {
+	PortOpened      func()
+	PortLost        func(err error)
+	ClientConnected func(addr string)
+	ClientGone      func()
+	// Traffic reports bytes relayed since the previous call, in each direction.
+	Traffic func(toClient, toMount int)
+}
+
+func (e Events) portOpened() {
+	if e.PortOpened != nil {
+		e.PortOpened()
+	}
+}
+
+func (e Events) portLost(err error) {
+	if e.PortLost != nil {
+		e.PortLost(err)
+	}
+}
+
+func (e Events) clientConnected(addr string) {
+	if e.ClientConnected != nil {
+		e.ClientConnected(addr)
+	}
+}
+
+func (e Events) clientGone() {
+	if e.ClientGone != nil {
+		e.ClientGone()
+	}
+}
+
+func (e Events) traffic(toClient, toMount int) {
+	if e.Traffic != nil {
+		e.Traffic(toClient, toMount)
+	}
 }
 
 const bufSize = 4096
@@ -69,14 +112,18 @@ func Run(ctx context.Context, cfg Config) error {
 			continue
 		}
 
-		err = relay(ctx, log, port, conns, acceptErr)
+		cfg.Events.portOpened()
+		err = relay(ctx, log, port, conns, acceptErr, cfg.Events)
 		port.Close()
 		if ctx.Err() != nil {
+			cfg.Events.portLost(nil)
 			return nil
 		}
 		if errors.Is(err, errAccept) {
+			cfg.Events.portLost(err)
 			return errors.Unwrap(err)
 		}
+		cfg.Events.portLost(err)
 		log.Warn("serial port lost", "err", err)
 		if !sleep(ctx, cfg.RetryDelay) {
 			return nil
@@ -191,7 +238,7 @@ func readInto(r io.Reader, data chan<- []byte, errc chan<- error, done <-chan st
 
 // relay serves clients through port until the port fails, ctx ends, or the
 // listener dies. The caller closes port afterwards.
-func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns <-chan net.Conn, acceptErr <-chan error) error {
+func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns <-chan net.Conn, acceptErr <-chan error, ev Events) error {
 	serialData := make(chan []byte)
 	serialErr := make(chan error, 1)
 	done := make(chan struct{})
@@ -202,11 +249,17 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 	defer func() {
 		if cur != nil {
 			cur.close()
+			ev.clientGone()
 		}
 	}()
 	// nil channels block forever in select, which is exactly "no client".
 	var curData chan []byte
 	var curErr chan error
+	drop := func() {
+		cur.close()
+		cur, curData, curErr = nil, nil, nil
+		ev.clientGone()
+	}
 
 	for {
 		select {
@@ -225,6 +278,7 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 			}
 			cur = newClient(c)
 			curData, curErr = cur.data, cur.err
+			ev.clientConnected(c.RemoteAddr().String())
 
 		case data := <-serialData:
 			if cur == nil {
@@ -232,9 +286,10 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 			}
 			if _, err := cur.conn.Write(data); err != nil {
 				log.Debug("client write failed", "err", err)
-				cur.close()
-				cur, curData, curErr = nil, nil, nil
+				drop()
+				continue
 			}
+			ev.traffic(len(data), 0)
 
 		case data := <-curData:
 			if cur.first {
@@ -243,14 +298,14 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 					// A browser can be tricked into sending an HTTP request to
 					// localhost:4030; never let that reach the mount.
 					log.Warn("rejected client that speaks HTTP, not a telescope protocol", "addr", cur.conn.RemoteAddr())
-					cur.close()
-					cur, curData, curErr = nil, nil, nil
+					drop()
 					continue
 				}
 			}
 			if _, err := port.Write(data); err != nil {
 				return err
 			}
+			ev.traffic(0, len(data))
 
 		case err := <-curErr:
 			if !errors.Is(err, io.EOF) {
@@ -258,8 +313,7 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 			} else {
 				log.Debug("client disconnected", "addr", cur.conn.RemoteAddr())
 			}
-			cur.close()
-			cur, curData, curErr = nil, nil, nil
+			drop()
 
 		case err := <-serialErr:
 			return err

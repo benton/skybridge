@@ -19,6 +19,8 @@ type serveOptions struct {
 	Baud    int            // overrides Profile.Baud when non-zero
 	Verify  bool           // probe after every open
 	Retry   time.Duration  // delay between attempts
+	// Opened, when set, is told which port was opened and at what speed.
+	Opened func(path string, baud int)
 
 	probeTimeout time.Duration // tests shorten the probe; zero keeps the profile's
 }
@@ -89,6 +91,9 @@ func newOpener(o serveOptions, log *slog.Logger) bridge.Opener {
 			}
 
 			log.Info("serial port opened", "path", path, "baud", o.baud())
+			if o.Opened != nil {
+				o.Opened(path, o.baud())
+			}
 			return port, nil
 		}
 	}
