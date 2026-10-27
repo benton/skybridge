@@ -1,0 +1,8 @@
+/dist/
+/skybridge
+/skybridge.exe
+*.pyc
+__pycache__/
+.DS_Store
+/tmp/
+/.superpowers/
