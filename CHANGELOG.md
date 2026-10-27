@@ -6,6 +6,15 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-27
+
+### Fixed
+
+- Binaries are built with Go 1.26.10. The 0.2.0 binaries carried a Go
+  1.26.6 standard library with known `net/http` and `crypto/x509` issues
+  (GO-2026-6611, 6612, 6613, 6617 and 6809), which the control panel
+  made reachable.
+
 ## [0.2.0] - 2026-10-27
 
 ### Added
