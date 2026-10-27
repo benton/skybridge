@@ -1,13 +1,20 @@
 # Sky Bridge
 
 Sky Bridge allows users to drive a telescope that only has a USB / serial
-connector using SkySafari. It runs on just about any computer (Mac/Windows/Linux)
-that can connect to both the telescope mount and SkySafari's WiFi network.
+connector using [SkySafari][1]. It runs on just about any computer
+that can connect to both the telescope mount and SkySafari's local WiFi network.
 
 For example, on a Celestron telescope, the software opens the hand controller's 
 USB/serial connection and also listens on TCP port 4030, which is how SkySafari 
-talks to a SkyFi hardware box. SkySafari then connects to Sky Bridge, as if it 
+talks to a SkyFi hardware box. SkySafari then connects to that port as if it 
 were the SkyFi unit, passing data in both directions.
+
+```mermaid
+flowchart LR
+    S[SkySafari<br/>phone, tablet or PC] <-- "TCP :4030<br/>(SkyFi protocol)" --> B[Sky Bridge<br/>host computer]
+    B <-- "USB / serial<br/>(mount protocol)" --> H[Hand controller]
+    H <--> M[Telescope mount]
+```
 
 The software builds as one small binary with no dependencies, for Windows, macOS,
 and Linux (including Raspberry Pi). Leave it running: unplugging the cable or
@@ -71,3 +78,5 @@ handy under a service manager.
 - [Changelog](CHANGELOG.md)
 
 Sky Bridge is released under the MIT License; see [LICENSE](LICENSE).
+
+[1]:https://skysafariastronomy.com/
