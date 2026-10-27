@@ -6,6 +6,12 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-27
+
+First release. Verified against a Celestron NexStar+ hand controller on a
+Prolific PL2303G cable with SkySafari 7 Pro on macOS, including cable
+loss and reattach while connected.
+
 ### Added
 
 - Rewrite of the original Python `bridge.py` as a single static Go binary
