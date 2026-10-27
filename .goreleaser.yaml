@@ -45,6 +45,8 @@ archives:
     format_overrides:
       - goos: windows
         formats: [zip]
+      - goos: darwin
+        formats: [zip]
     files:
       - LICENSE
       - README.md
