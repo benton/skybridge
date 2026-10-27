@@ -126,3 +126,38 @@ func TestReadAfterCloseFails(t *testing.T) {
 		t.Fatalf("write: want ErrClosed, got %v", err)
 	}
 }
+
+// TestCloseRacingReadNeverReturnsOtherErrors hammers Close against an active
+// Read loop. Once Close has been called, Read must only ever report
+// ErrClosed; any other error means the descriptor was used after close.
+func TestCloseRacingReadNeverReturnsOtherErrors(t *testing.T) {
+	a, _ := ptyPair(t)
+	for i := 0; i < 40; i++ {
+		port, err := Open(a, Config{Baud: 9600})
+		if err != nil {
+			t.Fatal(err)
+		}
+		errc := make(chan error, 1)
+		go func() {
+			for {
+				_, err := port.Read(make([]byte, 16))
+				if err != nil {
+					errc <- err
+					return
+				}
+			}
+		}()
+		time.Sleep(time.Duration(i%7) * 50 * time.Microsecond)
+		if err := port.Close(); err != nil {
+			t.Fatal(err)
+		}
+		select {
+		case err := <-errc:
+			if !errors.Is(err, ErrClosed) {
+				t.Fatalf("iteration %d: Read returned %v after Close", i, err)
+			}
+		case <-time.After(time.Second):
+			t.Fatalf("iteration %d: Read did not return", i)
+		}
+	}
+}

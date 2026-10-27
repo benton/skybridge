@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"golang.org/x/sys/windows"
@@ -26,6 +27,9 @@ const (
 type windowsPort struct {
 	h      windows.Handle
 	closed atomic.Bool
+	// mu serialises Close against in-flight Read/Write calls so the handle
+	// is never used after it is closed.
+	mu sync.RWMutex
 }
 
 // devicePath turns COM3 into \\.\COM3, which is required for ports above COM9.
@@ -85,24 +89,38 @@ func configure(h windows.Handle, baud int) error {
 
 func (p *windowsPort) Read(buf []byte) (int, error) {
 	for {
-		if p.closed.Load() {
-			return 0, ErrClosed
+		n, err, again := p.readSlice(buf)
+		if again {
+			continue
 		}
-		var n uint32
-		err := windows.ReadFile(p.h, buf, &n, nil)
-		if p.closed.Load() {
-			return 0, ErrClosed
-		}
-		if err != nil {
-			return 0, fmt.Errorf("serial: read: %w", err)
-		}
-		if n > 0 {
-			return int(n), nil
-		}
+		return n, err
 	}
 }
 
+// readSlice performs one ReadFile under the read lock; the comm timeouts make
+// it return within readSliceMs when nothing arrives, in which case again is set.
+func (p *windowsPort) readSlice(buf []byte) (n int, err error, again bool) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	if p.closed.Load() {
+		return 0, ErrClosed, false
+	}
+	var got uint32
+	if err := windows.ReadFile(p.h, buf, &got, nil); err != nil {
+		if p.closed.Load() {
+			return 0, ErrClosed, false
+		}
+		return 0, fmt.Errorf("serial: read: %w", err), false
+	}
+	if got == 0 {
+		return 0, nil, true
+	}
+	return int(got), nil, false
+}
+
 func (p *windowsPort) Write(buf []byte) (int, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	if p.closed.Load() {
 		return 0, ErrClosed
 	}
@@ -124,18 +142,23 @@ func (p *windowsPort) Write(buf []byte) (int, error) {
 }
 
 func (p *windowsPort) Flush() error {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	if p.closed.Load() {
 		return ErrClosed
 	}
 	return windows.PurgeComm(p.h, windows.PURGE_RXCLEAR|windows.PURGE_TXCLEAR)
 }
 
+// Close marks the port closed, cancels a ReadFile in flight, waits for it to
+// release the read lock, then closes the handle.
 func (p *windowsPort) Close() error {
 	if p.closed.Swap(true) {
 		return nil
 	}
-	// Cancel a blocked ReadFile in another goroutine, then release the handle.
 	_ = windows.CancelIoEx(p.h, nil)
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if err := windows.CloseHandle(p.h); err != nil {
 		return fmt.Errorf("serial: close: %w", err)
 	}
