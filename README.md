@@ -22,7 +22,8 @@ powering the mount off and on again is handled automatically.
 
 ## Install and Run
 
-1. Download the archive for your operating system from the releases page.
+1. Download the archive for your operating system from the
+   [releases page](https://github.com/benton/skybridge/releases).
 2. Unpack it somewhere convenient. Inside is a single program, `skybridge`
    (`skybridge.exe` on Windows).
 3. Run it. With no arguments it starts serving immediately:
