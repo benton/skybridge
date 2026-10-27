@@ -16,8 +16,19 @@ skybridge could not find a serial port that looks like a mount.
   mount.
 - Run `skybridge list-ports`. If the port is listed but not recognised
   (no adapter name), pass it explicitly: `skybridge serve --port <path>`.
-  If nothing is listed, the OS does not see the adapter: check the driver
-  (Windows), the `dialout` group (Linux) or the cable.
+  If nothing is listed, the OS does not see the adapter. Confirm that
+  before suspecting skybridge or a driver:
+  - macOS: `ioreg -p IOUSB -w0` should list a USB-Serial Controller (or
+    your adapter's name) under one of the host controllers.
+  - Linux: `lsusb` should list the adapter's vendor, for example Prolific.
+  - Windows: Device Manager should show it under **Ports (COM & LPT)** or
+    **Other devices**.
+  If the adapter is missing there too, the fault is physical: reseat both
+  ends of the cable, in particular the small connector on the hand
+  controller, and try without hubs or adapters. A marginal connector can
+  work once and then vanish on the next replug. Only once the OS lists the
+  device is a driver (Windows, macOS Prolific) or the `dialout` group
+  (Linux) worth looking at.
 - If `--port` was given and the file does not exist yet, this line is
   normal; skybridge keeps checking every two seconds and opens the port
   when it appears.
@@ -30,7 +41,7 @@ error.
 - `permission denied` on Linux: add yourself to the `dialout` group and
   log in again (see [install.md](install.md)).
 - `resource busy` or `access denied`: another program has the port open.
-  Close other astronomy software, the old `bridge.py`, a terminal
+  Close other astronomy software, an older bridge script, a terminal
   emulator, or stop ModemManager (Linux).
 - `device not configured` on macOS right after plugging in: wait a second;
   skybridge retries on its own.
