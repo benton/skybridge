@@ -1,0 +1,83 @@
+# GoReleaser v2 configuration. Runs only in CI on v* tags.
+# Which forge receives the release is decided by the token present:
+# GITHUB_TOKEN on GitHub Actions, GITLAB_TOKEN on GitLab CI.
+version: 2
+
+project_name: skybridge
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: skybridge
+    main: ./cmd/skybridge
+    binary: skybridge
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X git.h.usky.io/huskynet/skybridge/internal/version.Version={{ .Version }}
+      - -X git.h.usky.io/huskynet/skybridge/internal/version.Commit={{ .ShortCommit }}
+      - -X git.h.usky.io/huskynet/skybridge/internal/version.Date={{ .Date }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "6"
+    ignore:
+      - goos: windows
+        goarch: arm
+      - goos: darwin
+        goarch: arm
+
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE
+      - README.md
+      - docs/*.md
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  use: git
+  groups:
+    - title: Features
+      regexp: '^feat(\(.*\))?:'
+      order: 0
+    - title: Fixes
+      regexp: '^fix(\(.*\))?:'
+      order: 1
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - '^docs(\(.*\))?:'
+      - '^test(\(.*\))?:'
+      - '^chore(\(.*\))?:'
+      - '^ci(\(.*\))?:'
+
+# git.h.usky.io is assumed to be a GitLab instance. If it is Gitea or
+# Forgejo, replace this block with gitea_urls (see docs/development.md).
+gitlab_urls:
+  api: https://git.h.usky.io/api/v4/
+  download: https://git.h.usky.io
+
+release:
+  draft: false
+  prerelease: auto
