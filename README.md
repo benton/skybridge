@@ -1,16 +1,19 @@
-# skybridge
+# Sky Bridge
 
-skybridge lets SkySafari drive a telescope mount that only has a serial
-port. It opens the hand controller's USB serial connection on your
-computer and listens on TCP port 4030, which is how SkySafari talks to a
-SkyFi box. SkySafari connects to skybridge, skybridge passes every byte
-through to the mount, and the mount answers back the same way.
+Sky Bridge bridge allows users to drive a telescope that only has a USB / serial
+connector using SkySafari. It runs on just about any computer (Mac/Windows/Linux)
+that can connect to both the telescope mount and SkySafari's WiFi network.
 
-It is one small binary with no dependencies, for Windows, macOS and Linux
-(including Raspberry Pi). Leave it running: unplugging the cable or
+For example, on a Celestron telescope, the software opens the hand controller's 
+USB/serial connection and also listens on TCP port 4030, which is how SkySafari 
+talks to a SkyFi hardware box. SkySafari then connects to Sky Bridge, as if it 
+were the SkyFi unit, passing data in both directions.
+
+The software builds as one small binary with no dependencies, for Windows, macOS,
+and Linux (including Raspberry Pi). Leave it running: unplugging the cable or
 powering the mount off and on again is handled automatically.
 
-## Install
+## Install and Run
 
 1. Download the archive for your operating system from the releases page.
 2. Unpack it somewhere convenient. Inside is a single program, `skybridge`
@@ -24,8 +27,7 @@ $ skybridge
 18:04:40 INFO serial port opened path=/dev/cu.usbserial-110 baud=9600
 ```
 
-See [docs/install.md](docs/install.md) for per-OS notes (Gatekeeper on
-macOS, the `dialout` group on Linux, drivers on Windows) and for running
+See [docs/install.md](docs/install.md) for per-OS notes and for running
 skybridge at login.
 
 ## Connect SkySafari
@@ -43,7 +45,7 @@ If SkySafari runs on a phone or tablet, start skybridge with
 That exposes the mount to everything on your network; the protocol has no
 password, so only do it on a network you trust.
 
-Full walkthrough with screenshots-in-words for SkySafari 6 and 7:
+Full walkthrough for SkySafari 6 and 7:
 [docs/skysafari.md](docs/skysafari.md).
 
 ## Commands
@@ -68,4 +70,4 @@ handy under a service manager.
 - [Development](docs/development.md)
 - [Changelog](CHANGELOG.md)
 
-skybridge is released under the MIT License; see [LICENSE](LICENSE).
+Sky Bridge is released under the MIT License; see [LICENSE](LICENSE).
