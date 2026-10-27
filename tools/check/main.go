@@ -78,12 +78,33 @@ func run(name string, args ...string) error {
 	return cmd.Run()
 }
 
+// checkFmt runs gofmt -l over the module's own package directories only, so
+// a module cache or build cache kept inside the checkout (as CI does) is
+// never walked.
 func checkFmt() error {
-	out, err := exec.Command("gofmt", "-l", ".").Output()
+	dirs, err := exec.Command("go", "list", "-f", "{{.Dir}}", "./...").Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("go list: %w", err)
 	}
-	if files := strings.TrimSpace(string(out)); files != "" {
+	args := []string{"-l"}
+	for _, d := range strings.Fields(string(dirs)) {
+		entries, err := os.ReadDir(d)
+		if err != nil {
+			return err
+		}
+		for _, e := range entries {
+			if !e.IsDir() && strings.HasSuffix(e.Name(), ".go") {
+				args = append(args, filepath.Join(d, e.Name()))
+			}
+		}
+	}
+	cmd := exec.Command("gofmt", args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("gofmt: %w\n%s", err, stderr.String())
+	}
+	if files := strings.TrimSpace(stdout.String()); files != "" {
 		return fmt.Errorf("files need gofmt:\n%s", files)
 	}
 	return nil
