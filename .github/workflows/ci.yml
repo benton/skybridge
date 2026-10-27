@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
       - run: go run ./tools/check fmt vet static vuln tidy
 
   test:
@@ -31,6 +32,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y socat
       - if: runner.os == 'macOS'
@@ -47,4 +49,5 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
       - run: go run ./tools/check cross
