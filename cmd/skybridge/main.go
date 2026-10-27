@@ -2,11 +2,11 @@
 package main
 
 import (
-	"fmt"
+	"os"
 
-	"git.h.usky.io/huskynet/skybridge/internal/version"
+	"git.h.usky.io/huskynet/skybridge/internal/cli"
 )
 
 func main() {
-	fmt.Println(version.Get().String())
+	os.Exit(cli.Main(os.Args[1:], os.Stdout, os.Stderr, os.Getenv))
 }
