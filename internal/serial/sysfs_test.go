@@ -1,3 +1,9 @@
+// sysfs interface directories are named like 1-1:1.0, and NTFS rejects
+// the colon, so the fixture cannot be built on Windows. listSysfs itself is
+// only used on Linux.
+
+//go:build !windows
+
 package serial
 
 import (
