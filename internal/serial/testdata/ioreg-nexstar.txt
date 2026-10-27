@@ -1,0 +1,57 @@
++-o USB2.0 Hub@01100000  <class IOUSBHostDevice, id 0x100001a00, registered, matched, active, busy 0 (12 ms), retain 30>
+  | {
+  |   "sessionID" = 22729996970
+  |   "idProduct" = 1537
+  |   "USB Product Name" = "USB2.0 Hub"
+  |   "idVendor" = 1507
+  | }
+  | 
+  +-o AppleUSB20Hub@01100000  <class AppleUSB20Hub, id 0x100001a10, registered, matched, active, busy 0 (10 ms), retain 20>
+  |   {
+  |     "IOClass" = "AppleUSB20Hub"
+  |   }
+  |   
+  +-o USB-Serial Controller@01110000  <class IOUSBHostDevice, id 0x100001a20, registered, matched, active, busy 0 (33 ms), retain 24>
+    | {
+    |   "sessionID" = 22729996971
+    |   "idProduct" = 9123
+    |   "iManufacturer" = 1
+    |   "USB Product Name" = "USB-Serial Controller"
+    |   "USB Vendor Name" = "Prolific Technology Inc."
+    |   "idVendor" = 1659
+    |   "kUSBProductString" = "USB-Serial Controller"
+    | }
+    | 
+    +-o AppleUSBHostInterface@0  <class AppleUSBHostInterface, id 0x100001a30, registered, matched, active, busy 0 (30 ms), retain 12>
+      | {
+      |   "bInterfaceNumber" = 0
+      | }
+      | 
+      +-o com_prolific_driver_PL2303  <class com_prolific_driver_PL2303, id 0x100001a40, registered, matched, active, busy 0 (25 ms), retain 10>
+        | {
+        |   "IOClass" = "com_prolific_driver_PL2303"
+        | }
+        | 
+        +-o IOSerialBSDClient  <class IOSerialBSDClient, id 0x100001a50, registered, matched, active, busy 0 (1 ms), retain 5>
+            {
+              "IOClass" = "IOSerialBSDClient"
+              "IOTTYBaseName" = "PL2303G-USBtoUART"
+              "IOSerialBSDClientType" = "IOSerialStream"
+              "IOTTYDevice" = "PL2303G-USBtoUART110"
+              "IODialinDevice" = "/dev/tty.PL2303G-USBtoUART110"
+              "IOCalloutDevice" = "/dev/cu.PL2303G-USBtoUART110"
+              "IOTTYSuffix" = "110"
+            }
+            
++-o Razer DeathAdder V2@02100000  <class IOUSBHostDevice, id 0x100001b00, registered, matched, active, busy 0 (8 ms), retain 18>
+  | {
+  |   "idProduct" = 132
+  |   "USB Product Name" = "Razer DeathAdder V2"
+  |   "idVendor" = 5426
+  | }
+  | 
+  +-o IOUSBHostHIDDevice@02100000,0  <class IOUSBHostHIDDevice, id 0x100001b10, registered, matched, active, busy 0 (5 ms), retain 9>
+      {
+        "IOClass" = "IOUSBHostHIDDevice"
+      }
+      
