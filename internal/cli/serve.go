@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"slices"
 	"time"
 
 	"git.h.usky.io/huskynet/skybridge/internal/bridge"
 	"git.h.usky.io/huskynet/skybridge/internal/mounts"
+	"git.h.usky.io/huskynet/skybridge/internal/serial"
 )
 
 const (
@@ -38,23 +40,16 @@ func runServe(ctx context.Context, s *stdio, args []string) int {
 		fmt.Fprintf(s.Err, "skybridge: %v\n", err)
 		return ExitUsage
 	}
-	opts := serveOptions{Port: *port, Verify: *verify, Retry: retryDelay}
-	if opts.Profile, err = resolveMount(*mount); err != nil {
-		fmt.Fprintf(s.Err, "skybridge: %v\n", err)
-		return ExitUsage
-	}
+	baudOverride := 0
 	if *baud != "" {
-		if opts.Baud, err = parseBaud(*baud); err != nil {
+		if baudOverride, err = parseBaud(*baud); err != nil {
 			fmt.Fprintf(s.Err, "skybridge: %v\n", err)
 			return ExitUsage
 		}
 	}
-	if opts.baud() == 0 {
-		fmt.Fprintf(s.Err, "skybridge: profile %q has no baud rate; pass --baud\n", opts.Profile.Name)
-		return ExitUsage
-	}
-	if opts.Verify && opts.Profile.Probe == nil {
-		fmt.Fprintf(s.Err, "skybridge: profile %q has no probe; --verify is not available\n", opts.Profile.Name)
+	opts, err := buildServeOptions(*port, *mount, baudOverride, *verify)
+	if err != nil {
+		fmt.Fprintf(s.Err, "skybridge: %v\n", err)
 		return ExitUsage
 	}
 
@@ -77,4 +72,27 @@ func runServe(ctx context.Context, s *stdio, args []string) int {
 	}
 	log.Info("stopped")
 	return ExitOK
+}
+
+// buildServeOptions checks the serve settings and turns them into options.
+// baud is 0 for the profile's default.
+func buildServeOptions(port, mount string, baud int, verify bool) (serveOptions, error) {
+	opts := serveOptions{Port: port, Verify: verify, Retry: retryDelay}
+	var err error
+	if opts.Profile, err = resolveMount(mount); err != nil {
+		return opts, err
+	}
+	if baud != 0 {
+		if !slices.Contains(serial.SupportedBauds, baud) {
+			return opts, fmt.Errorf("unsupported baud rate %d (supported: %s)", baud, serial.SupportedBaudList())
+		}
+		opts.Baud = baud
+	}
+	if opts.baud() == 0 {
+		return opts, fmt.Errorf("profile %q has no baud rate; pass --baud", opts.Profile.Name)
+	}
+	if opts.Verify && opts.Profile.Probe == nil {
+		return opts, fmt.Errorf("profile %q has no probe; --verify is not available", opts.Profile.Name)
+	}
+	return opts, nil
 }

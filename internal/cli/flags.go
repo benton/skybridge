@@ -48,20 +48,27 @@ func parseFlags(fs *flag.FlagSet, s *stdio, args []string) (ok bool, code int) {
 	return true, ExitOK
 }
 
-// newLogger builds the stderr logger for a command.
-func newLogger(w io.Writer, level, format string) (*slog.Logger, error) {
-	var lvl slog.Level
+// parseLevel turns a --log-level value into a slog level.
+func parseLevel(level string) (slog.Level, error) {
 	switch strings.ToLower(level) {
 	case "debug":
-		lvl = slog.LevelDebug
+		return slog.LevelDebug, nil
 	case "info":
-		lvl = slog.LevelInfo
+		return slog.LevelInfo, nil
 	case "warn", "warning":
-		lvl = slog.LevelWarn
+		return slog.LevelWarn, nil
 	case "error":
-		lvl = slog.LevelError
+		return slog.LevelError, nil
 	default:
-		return nil, fmt.Errorf("unknown log level %q (want debug, info, warn or error)", level)
+		return 0, fmt.Errorf("unknown log level %q (want debug, info, warn or error)", level)
+	}
+}
+
+// newLogger builds the stderr logger for a command.
+func newLogger(w io.Writer, level, format string) (*slog.Logger, error) {
+	lvl, err := parseLevel(level)
+	if err != nil {
+		return nil, err
 	}
 	opts := &slog.HandlerOptions{Level: lvl}
 	switch strings.ToLower(format) {

@@ -111,14 +111,43 @@ func runProbe(ctx context.Context, s *stdio, args []string) int {
 		}
 	}
 
-	path, err := pickPort(ctx, *port, log)
+	var want *mounts.Profile
+	if *mount != "" {
+		want = &profile
+	}
+	res, err := probeMount(ctx, *port, want, baudOverride, log)
 	if err != nil {
-		fmt.Fprintf(s.Err, "skybridge: %v\n", err)
-		return ExitProbe
+		var pe probeError
+		if errors.As(err, &pe) {
+			fmt.Fprintf(s.Err, "skybridge: %v\n", err)
+			return ExitProbe
+		}
+		return reportOpenError(s, err)
+	}
+
+	if *asJSON {
+		return printJSON(s, res)
+	}
+	fmt.Fprintf(s.Out, "%s at %s (%d baud): reply %q\n", res.Profile, res.Path, res.Baud, res.Reply)
+	return ExitOK
+}
+
+// probeError is a mount that did not answer, as opposed to a port that
+// could not be opened.
+type probeError struct{ msg string }
+
+func (e probeError) Error() string { return e.msg }
+
+// probeMount finds the port (or uses explicit) and identifies the mount on
+// it, or checks that it is the wanted profile. Errors are probeError when the
+// mount did not answer and open errors otherwise.
+func probeMount(ctx context.Context, explicit string, want *mounts.Profile, baudOverride int, log *slog.Logger) (probeResult, error) {
+	path, err := pickPort(ctx, explicit, log)
+	if err != nil {
+		return probeResult{}, probeError{err.Error()}
 	}
 	if path == "" {
-		fmt.Fprintln(s.Err, "skybridge: no serial port found (is the mount on and the cable plugged in?)")
-		return ExitProbe
+		return probeResult{}, probeError{"no serial port found (is the mount on and the cable plugged in?)"}
 	}
 
 	open := func(ctx context.Context, b int) (io.ReadWriteCloser, error) {
@@ -132,36 +161,26 @@ func runProbe(ctx context.Context, s *stdio, args []string) int {
 		return p, nil
 	}
 
-	var res probeResult
-	if *mount != "" {
-		p, err := open(ctx, profile.Baud)
+	if want != nil {
+		p, err := open(ctx, want.Baud)
 		if err != nil {
-			return reportOpenError(s, err)
+			return probeResult{}, err
 		}
-		reply, perr := profile.Probe.Run(ctx, p)
+		reply, perr := want.Probe.Run(ctx, p)
 		p.Close()
 		if perr != nil {
-			fmt.Fprintf(s.Err, "skybridge: %s at %s: %v\n", profile.Name, path, perr)
-			return ExitProbe
+			return probeResult{}, probeError{fmt.Sprintf("%s at %s: %v", want.Name, path, perr)}
 		}
-		res = probeResult{profile.Name, path, effectiveBaud(profile.Baud, baudOverride), reply}
-	} else {
-		p, reply, err := mounts.Identify(ctx, open, log)
-		if err != nil {
-			if errors.Is(err, mounts.ErrUnidentified) {
-				fmt.Fprintf(s.Err, "skybridge: no known mount answered on %s\n", path)
-				return ExitProbe
-			}
-			return reportOpenError(s, err)
+		return probeResult{want.Name, path, effectiveBaud(want.Baud, baudOverride), reply}, nil
+	}
+	p, reply, err := mounts.Identify(ctx, open, log)
+	if err != nil {
+		if errors.Is(err, mounts.ErrUnidentified) {
+			return probeResult{}, probeError{"no known mount answered on " + path}
 		}
-		res = probeResult{p.Name, path, effectiveBaud(p.Baud, baudOverride), reply}
+		return probeResult{}, err
 	}
-
-	if *asJSON {
-		return printJSON(s, res)
-	}
-	fmt.Fprintf(s.Out, "%s at %s (%d baud): reply %q\n", res.Profile, res.Path, res.Baud, res.Reply)
-	return ExitOK
+	return probeResult{p.Name, path, effectiveBaud(p.Baud, baudOverride), reply}, nil
 }
 
 func effectiveBaud(profileBaud, override int) int {
