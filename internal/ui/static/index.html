@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Sky Bridge</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="top">
+  <svg class="mark" viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+    <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" opacity=".7">
+      <path stroke-width="2.6" d="M4 44h56M18 44V22M46 44V22"/>
+      <path stroke-width="2" d="M18 22q14 18 28 0M18 22q-8 2-14 14M46 22q8 2 14 14"/>
+      <path stroke-width="1.2" d="M25 28.75V44M32 31V44M39 28.75V44"/>
+    </g>
+    <g fill="none" stroke="var(--ember)" stroke-linecap="round" stroke-linejoin="round">
+      <path stroke-width="2.6" d="M32 35L21 58M32 35L43 58M32 35V56"/>
+      <path stroke-width="6" d="M20 49L46 16"/>
+      <path stroke-width="9" d="M45.5 16.5L50 11"/>
+      <path stroke-width="3" d="M20 49l-4 5"/>
+    </g>
+  </svg>
+  <h1>Sky Bridge <span id="version" class="version"></span></h1>
+  <div class="top-actions">
+    <button id="redlight" type="button" class="quiet" aria-pressed="false">Red light</button>
+    <button id="toggle" type="button" class="primary" disabled>Start</button>
+  </div>
+</header>
+
+<p id="offline" class="banner" hidden>Lost contact with Sky Bridge. Is it still running? Reconnecting.</p>
+
+<main>
+<section class="chain" aria-label="Connection status">
+  <div class="node" id="node-app">
+    <div class="node-name">SkySafari</div>
+    <div class="node-sub" id="app-sub">not connected</div>
+  </div>
+  <div class="link" id="link-app" data-live="false">
+    <div class="line"></div>
+    <div class="link-sub" id="link-app-sub"></div>
+  </div>
+  <div class="node bridge" id="node-bridge">
+    <div class="node-name">Sky Bridge</div>
+    <div class="node-sub" id="bridge-sub">stopped</div>
+    <div class="node-err" id="bridge-err" hidden></div>
+  </div>
+  <div class="link" id="link-mount" data-live="false">
+    <div class="line"></div>
+    <div class="link-sub" id="link-mount-sub"></div>
+  </div>
+  <div class="node" id="node-mount">
+    <div class="node-name" id="mount-name">Mount</div>
+    <div class="node-sub" id="mount-sub">not connected</div>
+  </div>
+</section>
+
+<div class="panes">
+<section class="pane log-pane" aria-label="Log">
+  <h2>Log</h2>
+  <ol id="log" class="log" aria-live="polite"></ol>
+</section>
+
+<section class="pane setup" aria-label="Setup">
+  <h2>Setup</h2>
+  <form id="setup" autocomplete="off">
+    <label for="port">Serial port</label>
+    <div class="row">
+      <select id="port" name="port"><option value="">Auto-detect</option></select>
+      <button type="button" id="refresh" class="quiet" title="Look for ports again">Refresh</button>
+    </div>
+
+    <label for="mount">Mount</label>
+    <select id="mount" name="mount"></select>
+    <p class="hint" id="mount-hint"></p>
+
+    <label for="baud">Speed</label>
+    <select id="baud" name="baud"></select>
+
+    <label for="listen">Listen for SkySafari on</label>
+    <input id="listen" name="listen" type="text" spellcheck="false" placeholder="127.0.0.1:4030">
+    <p class="hint">Use <code>0.0.0.0:4030</code> when SkySafari runs on a phone or tablet. That opens the mount to everything on your network.</p>
+
+    <label class="check"><input id="verify" name="verify" type="checkbox"> Check the mount answers before using the port</label>
+
+    <div class="row actions">
+      <button type="submit" id="apply" class="primary">Apply</button>
+      <button type="button" id="identify" class="quiet">Identify mount</button>
+    </div>
+    <p class="msg" id="setup-msg" role="status"></p>
+    <p class="msg" id="probe-msg" role="status"></p>
+  </form>
+</section>
+</div>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
