@@ -1,0 +1,52 @@
+# GitLab CI for skybridge. Shared runners are Linux only; macOS and Windows
+# are covered by cross-compilation here and by native runs on GitHub Actions.
+
+image: golang:1.26
+
+stages: [check, test, build, release]
+
+variables:
+  GOMODCACHE: $CI_PROJECT_DIR/.gocache/mod
+  GOCACHE: $CI_PROJECT_DIR/.gocache/build
+  GOFLAGS: -buildvcs=false
+
+cache:
+  key:
+    files: [go.sum]
+  paths:
+    - .gocache/
+
+check:
+  stage: check
+  script:
+    - go run ./tools/check fmt vet static vuln tidy
+
+test:
+  stage: test
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends socat
+  script:
+    - go test -race -coverprofile=cover.out ./...
+    - go tool cover -func=cover.out | tail -1
+  coverage: '/total:\s+\(statements\)\s+(\d+\.\d+)%/'
+
+cross:
+  stage: build
+  script:
+    - go run ./tools/check cross
+  artifacts:
+    paths: [dist/check/]
+    expire_in: 1 week
+
+release:
+  stage: release
+  image:
+    name: goreleaser/goreleaser:v2.19.0
+    entrypoint: [""]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v/
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - goreleaser release --clean
+  # Requires a masked CI/CD variable GITLAB_TOKEN (project access token, api scope).
