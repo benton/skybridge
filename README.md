@@ -1,6 +1,6 @@
 # Sky Bridge
 
-Sky Bridge bridge allows users to drive a telescope that only has a USB / serial
+Sky Bridge allows users to drive a telescope that only has a USB / serial
 connector using SkySafari. It runs on just about any computer (Mac/Windows/Linux)
 that can connect to both the telescope mount and SkySafari's WiFi network.
 
