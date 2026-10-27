@@ -4,6 +4,11 @@ Sky Bridge allows users to drive a telescope that only has a USB / serial
 connector using [SkySafari][1]. It runs on just about any computer
 that can connect to both the telescope mount and SkySafari's local WiFi network.
 
+![The control panel: SkySafari connected, the bridge listening, and a NexStar hand controller open on its serial port, with the log and setup below](docs/images/control-panel.png)
+
+That is `skybridge gui`, the control panel; `skybridge serve` does the same job
+without one.
+
 For example, on a Celestron telescope, the software opens the hand controller's 
 USB/serial connection and also listens on TCP port 4030, which is how SkySafari 
 talks to a SkyFi hardware box. SkySafari then connects to that port as if it 
@@ -19,11 +24,6 @@ flowchart LR
 The software builds as one small binary with no dependencies, for Windows, macOS,
 and Linux (including Raspberry Pi). Leave it running: unplugging the cable or
 powering the mount off and on again is handled automatically.
-
-![The control panel: SkySafari connected, the bridge listening, and a NexStar hand controller open on its serial port, with the log and setup below](docs/images/control-panel.png)
-
-That is `skybridge gui`, the control panel; `skybridge serve` does the same job
-without one.
 
 ## Install and Run
 

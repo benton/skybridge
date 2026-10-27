@@ -9,6 +9,8 @@ $ skybridge gui
 18:04:12 INFO listening addr=127.0.0.1:4030 mount=celestron-nexstar
 ```
 
+![The control panel with SkySafari connected and a NexStar hand controller open on its serial port](images/control-panel.png)
+
 The page shows the chain SkySafari, Sky Bridge, mount, and which links are
 live. Under it is the log and, beside the log, the setup: serial port,
 mount profile, speed, the address SkySafari connects to, and whether to
