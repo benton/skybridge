@@ -262,3 +262,44 @@ func TestManyReconnectsDoNotLeak(t *testing.T) {
 	defer c.Close()
 	exchange(t, c, m)
 }
+
+func TestRejectsHTTPLookingClient(t *testing.T) {
+	m := newMount()
+	h := start(t, m)
+	// A browser tricked into fetch("http://127.0.0.1:4030") sends an HTTP request line.
+	c := dial(t, h.addr)
+	defer c.Close()
+	if _, err := c.Write([]byte("POST / HTTP/1.1\r\nHost: 127.0.0.1:4030\r\n\r\nKx")); err != nil {
+		t.Fatal(err)
+	}
+	_ = c.SetReadDeadline(time.Now().Add(time.Second))
+	if _, err := c.Read(make([]byte, 1)); err == nil {
+		t.Fatal("http-looking client was not closed")
+	}
+	// Nothing must have reached the mount; a real client still works afterwards.
+	_ = m.far.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
+	if n, _ := m.far.Read(make([]byte, 64)); n != 0 {
+		t.Fatalf("%d bytes leaked to the mount", n)
+	}
+	_ = m.far.SetReadDeadline(time.Time{})
+	c2 := dial(t, h.addr)
+	defer c2.Close()
+	exchange(t, c2, m)
+}
+
+func TestLooksLikeHTTP(t *testing.T) {
+	yes := []string{"GET / HTTP/1.1\r\n", "POST /x", "PUT ", "OPTIONS * HTTP/1.1", "HEAD /", "DELETE /", "PATCH /", "CONNECT a:1", "TRACE /",
+		// fetch() allows custom method tokens, so the request line must be caught on its version marker too
+		"KX / HTTP/1.1\r\nHost: 127.0.0.1:4030\r\n", "get / HTTP/1.1", "Kx /slew HTTP/2"}
+	no := []string{"Kx", "V", ":GVP#", "P\x01\x10\xfe\x00\x00\x00\x02", "e", "GETX", "Post /", "", "G"}
+	for _, s := range yes {
+		if !looksLikeHTTP([]byte(s)) {
+			t.Errorf("%q should look like HTTP", s)
+		}
+	}
+	for _, s := range no {
+		if looksLikeHTTP([]byte(s)) {
+			t.Errorf("%q should not look like HTTP", s)
+		}
+	}
+}

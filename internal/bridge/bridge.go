@@ -5,6 +5,7 @@
 package bridge
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -150,14 +151,15 @@ func awaitPort(ctx context.Context, open Opener, conns <-chan net.Conn, acceptEr
 
 // client is the current TCP peer and the goroutine reading from it.
 type client struct {
-	conn net.Conn
-	data chan []byte
-	err  chan error
-	done chan struct{}
+	conn  net.Conn
+	data  chan []byte
+	err   chan error
+	done  chan struct{}
+	first bool // no bytes received yet
 }
 
 func newClient(c net.Conn) *client {
-	cl := &client{conn: c, data: make(chan []byte), err: make(chan error, 1), done: make(chan struct{})}
+	cl := &client{conn: c, data: make(chan []byte), err: make(chan error, 1), done: make(chan struct{}), first: true}
 	go readInto(c, cl.data, cl.err, cl.done)
 	return cl
 }
@@ -235,6 +237,17 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 			}
 
 		case data := <-curData:
+			if cur.first {
+				cur.first = false
+				if looksLikeHTTP(data) {
+					// A browser can be tricked into sending an HTTP request to
+					// localhost:4030; never let that reach the mount.
+					log.Warn("rejected client that speaks HTTP, not a telescope protocol", "addr", cur.conn.RemoteAddr())
+					cur.close()
+					cur, curData, curErr = nil, nil, nil
+					continue
+				}
+			}
 			if _, err := port.Write(data); err != nil {
 				return err
 			}
@@ -258,6 +271,23 @@ func relay(ctx context.Context, log *slog.Logger, port io.ReadWriteCloser, conns
 			return ctx.Err()
 		}
 	}
+}
+
+// httpMethods are the standard request-line starts. Browsers may also send a
+// custom method token through fetch(), so the HTTP version marker that every
+// request line carries is checked as well. No telescope protocol sends a
+// method-and-space or " HTTP/" at the start of a session.
+var httpMethods = []string{"GET ", "POST ", "PUT ", "HEAD ", "DELETE ", "OPTIONS ", "PATCH ", "CONNECT ", "TRACE "}
+
+// looksLikeHTTP reports whether the first bytes from a client form an HTTP
+// request rather than mount traffic.
+func looksLikeHTTP(first []byte) bool {
+	for _, m := range httpMethods {
+		if len(first) >= len(m) && string(first[:len(m)]) == m {
+			return true
+		}
+	}
+	return bytes.Contains(first, []byte(" HTTP/"))
 }
 
 // sleep waits for d or until ctx is done; it reports whether the full delay elapsed.

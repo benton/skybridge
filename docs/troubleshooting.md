@@ -61,6 +61,17 @@ or the old Python bridge. Stop it, or choose another port with `--listen`
 and change the port in SkySafari to match. skybridge exits with code 2 in
 this case.
 
+### `rejected client that speaks HTTP`
+
+Something connected to skybridge's port and sent an HTTP request instead
+of telescope commands. skybridge closes such connections without
+forwarding anything, because a web page could otherwise be tricked into
+sending commands to your mount through your own browser. If you see this
+line while SkySafari is working normally, something else on the machine
+(a port scanner, a browser tab, a monitoring tool) is poking the port and
+you can ignore it. If you see it on a `--listen 0.0.0.0` address, consider
+whether the network it is exposed to is one you trust.
+
 ### `unknown mount profile`
 
 Check the spelling against `skybridge mounts`.
